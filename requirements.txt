@@ -1,0 +1,73 @@
+# Core dependencies for Street Gaussians Line-of-Sight Audit Pipeline
+
+# Deep Learning (install these FIRST from PyTorch website)
+# torch>=2.0.0
+# torchvision>=0.15.0
+# torchaudio>=2.0.0
+
+# 3D Gaussian Splatting (install AFTER torch)
+# diff-gaussian-rasterization
+# simple-knn
+
+# Street Gaussians (will be cloned separately)
+# git+https://github.com/zju3dv/street_gaussians.git
+
+# Computer Vision
+opencv-python>=4.8.0
+pillow>=10.0.0
+imageio>=2.31.0
+imageio-ffmpeg>=0.4.9
+
+# Object Detection & Segmentation
+ultralytics>=8.0.0  # YOLOv8
+segment-anything-2  # SAM2
+git+https://github.com/facebookresearch/segment-anything-2.git
+
+# Object Tracking (install AFTER torch)
+# git+https://github.com/ifzhang/ByteTrack.git
+lap>=0.4.0
+cython-bbox>=0.1.3
+
+# 3D Geometry
+numpy>=1.24.0
+scipy>=1.11.0
+scikit-image>=0.21.0
+trimesh>=3.23.0
+open3d>=0.17.0
+plyfile>=1.0.0
+
+# Optimization
+lpips>=0.1.4
+kornia>=0.7.0
+
+# Configuration & Utils
+pyyaml>=6.0
+omegaconf>=2.3.0
+tqdm>=4.66.0
+einops>=0.7.0
+rich>=13.0.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.17.0
+
+# Logging & Monitoring
+tensorboard>=2.14.0
+wandb>=0.15.0
+
+# Report Generation
+jinja2>=3.1.2
+markdown>=3.4.0
+weasyprint>=59.0  # For PDF generation
+
+# Spatial Analysis
+shapely>=2.0.0
+rtree>=1.0.0
+
+# Parallel Processing
+joblib>=1.3.0
+multiprocessing-logging>=0.3.0
+
+
+loguru

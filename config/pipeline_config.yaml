@@ -1,0 +1,180 @@
+# Traffic Intersection 3D Reconstruction Configuration
+# Multi-camera 3D reconstruction with dynamic object tracking
+
+project_name: "StreetAware-LoS-Audit"
+scene_name: "intersection_4corners_8cams"
+
+# === Data Configuration ===
+data:
+  video_dir: "StreetAware-sample"
+  cameras:
+    - "s1-left"
+    - "s1-right"
+    - "s2-left"
+    - "s2-right"
+    - "s3-left"
+    - "s3-right"
+    - "s4-left"
+    - "s4-right"
+  
+  video_format: ".mp4"
+  fps: 30  # Original video FPS
+  frame_sampling: 5  # Use every 5th frame for reconstruction
+  
+  # Output directories
+  processed_dir: "data/processed"
+  output_dir: "outputs"
+  log_dir: "logs"
+
+# === PASS 1: Static Scene Reconstruction ===
+pass1_static:
+  enabled: true
+  
+  # Background extraction (SAM2 + YOLO approach - keep this, it's good!)
+  background_extraction:
+    method: "temporal_median"
+    num_frames: 30  # Frames to sample per video
+    yolo_model: "yolov8n.pt"
+    yolo_conf: 0.2
+    dynamic_classes: ["person", "bicycle", "motorcycle", "car", "bus", "truck"]
+    sam2_model: "facebook/sam2-hiera-large"
+  
+  # Street Gaussians static scene training
+  static_gaussians:
+    # We'll use a modified Street Gaussians for static elements
+    training_iterations: 2000  # Number of training iterations for 3DGS
+    iterations: 30000
+    resolution: 1920  # Downscale from original if needed
+    sh_degree: 3
+    densify_grad_threshold: 0.0002
+    opacity_reset_interval: 3000
+    densification_interval: 100
+    position_lr_init: 0.00016
+    position_lr_final: 0.0000016
+    feature_lr: 0.0025
+    opacity_lr: 0.05
+    scaling_lr: 0.005
+    rotation_lr: 0.001
+    
+    # Save checkpoints
+    save_iterations: [7000, 15000, 30000]
+
+# === PASS 2: Dynamic Object Reconstruction ===
+pass2_dynamic:
+  enabled: true
+  
+  # Frame sampling
+  sample_rate: 5  # Process every 5th frame
+  
+  # Object tracking across time and views
+  tracking:
+    method: "bytetrack"  # ByteTrack is SOTA for multi-object tracking
+    detector: "yolov8x"  # Use larger YOLO for better accuracy
+    conf_threshold: 0.3
+    iou_threshold: 0.5
+    track_buffer: 30  # Frames to keep lost tracks
+    
+    # Classes to track for LoS audit
+    pedestrian_classes: ["person"]
+    vehicle_classes: ["car", "bus", "truck", "motorcycle", "bicycle"]
+    
+  # Segmentation for precise masks
+  segmentation:
+    method: "sam2"
+    model: "facebook/sam2-hiera-large"
+    use_box_prompts: true  # Use YOLO boxes as prompts
+  
+  # Multi-view aggregation
+  aggregation:
+    # Match objects across cameras using appearance + geometry
+    appearance_weight: 0.4
+    geometry_weight: 0.6
+    max_temporal_gap: 10  # Max frames between observations
+    min_observations: 3  # Min views needed to reconstruct
+  
+  # Per-object 3D Gaussian Splatting
+  object_gaussians:
+    iterations: 5000  # Fewer iterations per object
+    resolution: 512  # Smaller resolution for individual objects
+    sh_degree: 2
+    densify_grad_threshold: 0.0005
+    lambda_dssim: 0.2
+    
+    # Object-specific settings
+    pedestrian:
+      enable_deformation: true  # Handle pose changes
+      canonical_pose: "A-pose"
+    
+    vehicle:
+      enable_deformation: false  # Rigid objects
+      symmetry_constraint: true  # Use left-right symmetry
+
+# === Visibility Analysis ===
+visibility:
+  enabled: true
+  
+  # Ray-tracing configuration
+  raytracing:
+    method: "gaussian_splatting"  # Use 3DGS for fast ray-tracing
+    samples_per_ray: 512
+    opacity_threshold: 0.5
+    max_distance: 100.0  # meters
+  
+  # Line-of-Sight analysis
+  los_analysis:
+    # Sample pedestrian positions
+    pedestrian_sampling:
+      method: "detected_positions"  # Use actual detected pedestrians
+      grid_augmentation: false  # Set true to add grid points
+      grid_resolution: 0.5  # meters, if using grid
+    
+    # Sample vehicle positions
+    vehicle_sampling:
+      method: "detected_positions"
+      include_trajectories: true  # Consider predicted paths
+    
+    # Visibility computation
+    occlusion_threshold: 0.3  # % of ray blocked
+    visibility_classes:
+      clear: 0.0-0.1  # 0-10% occluded
+      partial: 0.1-0.5  # 10-50% occluded
+      blocked: 0.5-1.0  # 50-100% occluded
+  
+  # Blocking object identification
+  occlusion_attribution:
+    enabled: true
+    semantic_labels: true  # Label what blocks sight
+    confidence_threshold: 0.7
+
+# === Output & Visualization ===
+output:
+  # 3D models
+  save_static_ply: true
+  save_dynamic_ply: true
+  save_gaussian_models: true
+  
+  # Visibility maps
+  save_visibility_heatmaps: true
+  save_occlusion_reports: true
+  
+  # Audit reports
+  report_format: ["json", "html", "pdf"]
+  include_visualizations: true
+  
+  # Video rendering
+  render_audit_video: true
+  render_fps: 30
+  render_resolution: [1920, 1080]
+
+# === Hardware Configuration ===
+hardware:
+  device: "cuda"  # cuda or cpu
+  num_gpus: 1
+  mixed_precision: true
+  dtype: "float16"  # float16 or float32
+
+# === Logging ===
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  save_logs: true
+  tensorboard: true

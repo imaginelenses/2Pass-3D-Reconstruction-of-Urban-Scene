@@ -1,0 +1,166 @@
+# ============================================
+# Cloned Repositories
+# ============================================
+dust3r/
+ByteTrack/
+sam2_repo/
+segment-anything-2/
+street_gaussians/
+
+# ============================================
+# Downloaded Models & Checkpoints
+# ============================================
+# YOLO models
+*.pt
+yolov8*.pt
+yolo*.weights
+
+# DUSt3R models
+*.pth
+
+# General checkpoints
+*.ckpt
+*.weights
+checkpoints/
+models/
+
+# SAM2 models
+sam2*.pt
+
+# ============================================
+# Data & Samples
+# ============================================
+# Sample datasets
+StreetAware-sample/
+sample_data/
+samples/
+
+# Input videos
+data/videos/*.mp4
+data/videos/*.avi
+data/videos/*.mov
+
+# Processed images
+data/images/
+data/frames/
+data/extracted/
+
+# ============================================
+# Outputs & Results
+# ============================================
+outputs/
+logs/
+results/
+temp/
+tmp/
+
+# Point clouds
+*.ply
+
+# Reconstructions
+*.npz
+*.pkl
+*.pickle
+
+# JSON results (optional - uncomment if you want to exclude)
+# *.json
+
+# ============================================
+# Python
+# ============================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# ============================================
+# IDE & Editors
+# ============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# ============================================
+# OS
+# ============================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ============================================
+# Testing
+# ============================================
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# ============================================
+# Jupyter
+# ============================================
+.ipynb_checkpoints
+*.ipynb
+
+# ============================================
+# mypy
+# ============================================
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ============================================
+# Large Files
+# ============================================
+# Videos
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Images (if large datasets)
+# Uncomment if needed:
+# *.jpg
+# *.jpeg
+# *.png
+
+# Archives
+*.zip
+*.tar.gz
+*.tar
+*.rar
