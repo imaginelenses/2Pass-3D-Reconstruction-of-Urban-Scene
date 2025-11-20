@@ -451,6 +451,63 @@ class StaticSceneReconstructor:
         
         return output_file, None, None
     
+    def create_gaussian_splats(self, points_3d, colors_3d, cameras):
+        """
+        Convert DUSt3R static point cloud into a Gaussian Splat representation.
+
+        This does NOT perform full 3DGS optimization.
+        It simply converts sparse DUSt3R points into:
+        - mean (x, y, z)
+        - spherical covariance (isotropic Gaussian)
+        - color (r, g, b)
+        - opacity
+
+        Output is compatible with most 3DGS loaders.
+        """
+        self.logger.info("Converting static scene into Gaussian Splats...")
+
+        if points_3d is None or colors_3d is None:
+            self.logger.error("No point cloud available for Gaussian splatting.")
+            return None
+
+        # Number of points
+        N = points_3d.shape[0]
+
+        # Normalize colors
+        colors_norm = colors_3d.astype(np.float32) / 255.0
+
+        # Default gaussian scale (meters)
+        base_scale = self.static_config.get("gaussian_base_scale", 0.05)
+
+        # Compute per-point scale using local density
+        from sklearn.neighbors import NearestNeighbors
+        nbrs = NearestNeighbors(n_neighbors=8, algorithm='kd_tree').fit(points_3d)
+        dist, _ = nbrs.kneighbors(points_3d)
+
+        # Mean distance to neighbors → scale
+        scales = np.clip(dist.mean(axis=1), 0.01, 0.25)
+        scales = scales * base_scale
+
+        # Opacity (default = fully opaque)
+        opacity = np.ones((N, 1), dtype=np.float32)
+
+        # Construct Gaussian dictionary
+        gaussians = {
+            "means": points_3d.astype(np.float32),
+            "scales": scales.astype(np.float32).reshape(-1, 1),
+            "colors": colors_norm.astype(np.float32),
+            "opacity": opacity.astype(np.float32),
+        }
+
+        # Save to .npz for compatibility with gsplat/pyrenderers
+        output_path = self.output_dir / "static_scene_gaussians.npz"
+        np.savez_compressed(output_path, **gaussians)
+
+        self.logger.info(f"✓ Saved Gaussian Splat model → {output_path}")
+
+        return output_path
+
+    
     def run(self):
         """Run complete static scene reconstruction"""
         self.logger.info("=== PASS 1: Static Scene Reconstruction ===\n")
@@ -465,9 +522,33 @@ class StaticSceneReconstructor:
         
         # Estimate camera poses
         cameras = self.estimate_camera_poses(images)
-        
+
         # Create static reconstruction
         output_file = self.create_static_reconstruction(images, cameras)
+        # _create_point_cloud_reconstruction returns (ply_file, points_3d, colors_3d) on success
+        result = self._create_point_cloud_reconstruction(images, cameras)
+        ply_file = None
+        points = None
+        colors = None
+
+        if isinstance(result, tuple):
+            ply_file, points, colors = result
+        elif isinstance(result, (Path, str)):
+            ply_file = result
+        else:
+            # If create_static_reconstruction() was used earlier and it returned only a path, handle that
+            ply_file = result
+
+        # If we have points and colors, create gaussian splats
+        if points is not None and colors is not None:
+            gs_file = self.create_gaussian_splats(points, colors, cameras)
+            if gs_file is not None:
+                self.logger.info(f"Gaussian splats saved: {gs_file}")
+            else:
+                self.logger.warning("Gaussian splat creation failed or returned None.")
+        else:
+            self.logger.warning("No 3D points/colors available for gaussian splatting. "
+                                "Skip gaussian creation.")
         
         self.logger.info("\n✓ Static scene reconstruction complete")
         self.logger.info(f"  Output: {output_file}\n")
